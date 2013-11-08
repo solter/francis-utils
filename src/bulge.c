@@ -107,25 +107,16 @@ int chase_bulge(struct bulge_info *bi) {
 	size_t bulge_size = bi->nshifts_applied + 2;
 	size_t bulge_offset;
 
-	double v[bulge_size]; /* work vector for householder vectors and chasing the bulge */
-	const size_t vv_sz = bulge_size * (bulge_size + 1)/2;
-	double vv[vv_sz]; /* for holding v * v^T */
+	double vv[bulge_size * (bulge_size + 1)/2];
 	size_t b_N = bi->nshifts_applied + 1;
 
-	int j, r, c;
+	int r, c;
 	
 	if (bi->steps_chased < bi->order - 2) {
 		bulge_offset = bi->steps_chased;
 		b_N = bi->nshifts_applied + 1;
 
-		/* build normalized vector */
-		cblas_dcopy(b_N, &(bi->M[bulge_offset + (bulge_offset+1)*bi->order]), bi->order, v, 1);
-		v[0] += MYSIGN(v[0]) * cblas_dnrm2(b_N, v, 1);
-		cblas_dscal(b_N, 1.0 / cblas_dnrm2(b_N, v, 1), v, 1);
-
-		/* vv = v v^T */
-		for (j = 0; j < vv_sz; j++) vv[j] = 0; /* zero out vv */
-		cblas_dspr(CblasRowMajor, CblasUpper, b_N, 1.0, v, 1, vv);
+		create_house_matrix_packed(b_N, 0.0, &(bi->M[bulge_offset + (bulge_offset+1)*bi->order]), bi->order, vv);
 
 		/* use vv to process each small col and row which intersects with the bulge zone */
 		for (c = 0; c < bi->order; c++) {
