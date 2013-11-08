@@ -158,6 +158,8 @@ int chase_bulge(struct bulge_info *bi) {
 		create_house_matrix_packed(bulge_size - 1, 0.0, &bi->M[c + r*bi->order], bi->order, vv);
 		break;
 	case CHASE_BACKWARD:
+		puts("Backwards bulge chasing is not yet working.");
+		return -1;
 		bulge_position = bi->order - bulge_size - bi->steps_chased;
 
 		r = bulge_position + bulge_size - 1;
