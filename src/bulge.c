@@ -14,16 +14,21 @@
 
 
 
+/** Create the Householder symmetric matrix v*v^T
+ *
+ * This matrix is used to process the rows and columns of the input matrix.
+ */
 static void create_house_matrix_packed(size_t order, double shift, double *source, size_t incs, double *hhp) {
 	double h[order];
 	int i;
 
-	/* zero out the destination hhp */
+	/* zero out the destination hhp (it's packed aka triangular, so the size is
+	 * non-square) */
 	for (i = 0; i < order * (order + 1) / 2; i++) {
 		hhp[i] = 0;
 	}
 
-	/* create householder vector h */
+	/* create and normalize householder vector h */
 	cblas_dcopy(order, source, incs, h, 1);
 	h[0] += MYSIGN(h[0]) * cblas_dnrm2(order, h, 1);
 	h[0] -= shift;
@@ -40,7 +45,7 @@ static void create_house_matrix_packed(size_t order, double shift, double *sourc
  * Creates the bulge structure for matrix M. Create the bulge with as many shifts as
  * possible.
  *
- * Returns the number of steps needed to chase the bulge or -1 on error.
+ * Returns the number of chasing steps needed to chase the bulge or -1 on error.
  */
 int form_bulge(struct bulge_info *bi, size_t order, double *M, size_t nshifts,
                double *shifts, enum chase_direction direction) {
@@ -85,7 +90,8 @@ int form_bulge(struct bulge_info *bi, size_t order, double *M, size_t nshifts,
 			read_direction = -1;
 
 			/* build up vv by pulling out v from right to left (the vector gets
-			 * read backwards when the stride is negative) */
+			 * read backwards--i.e. ending at the indicated point--when the
+			 * stride is negative) */
 			r = order - 1;
 			c = order - 2 - shiftidx;
 			tempM = &M[c + r*order];
@@ -114,7 +120,8 @@ int form_bulge(struct bulge_info *bi, size_t order, double *M, size_t nshifts,
 				tempM, read_direction*1);
 		}
 
-		/* OPTIMIZATION: we can unroll the first few hits to the above loops */
+		/* OPTIMIZATION: we can unroll the first few hits to the above loops
+		 * into a level 3 BLAS operation */
 
 		/* in case we don't complete all shifts for some reason... */
 		bi->nshifts_applied = shiftidx + 1;
