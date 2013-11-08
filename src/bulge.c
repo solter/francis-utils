@@ -137,16 +137,24 @@ int form_bulge(struct bulge_info *bi, size_t order, double *M, size_t nshifts,
  * returns number of steps left to do
  */
 int chase_bulge(struct bulge_info *bi) {
-	size_t bulge_size = bi->nshifts_applied + 2;
+	size_t bulge_size;
 	size_t bulge_position;
-	double vv[bulge_size * (bulge_size + 1)/2];
 	int r, c;
 	
+	/* stop now if we've already chased the bulge off the matrix */
 	int steps_remaining = bi->order - 2 - bi->steps_chased;
-	
 	if (steps_remaining <= 0) {
 		return 0;
 	}
+
+	/* calculate current bulge size (it shrinks at the end of the chase) */
+	bulge_size = bi->nshifts_applied + 2;
+	if (bulge_size + bi->steps_chased > bi->order) {
+		bulge_size = bi->order - bi->steps_chased;
+	}
+
+	/* build Householder matrix vv */
+	double vv[bulge_size * (bulge_size + 1)/2];
 
 	switch (bi->direction) {
 	case CHASE_FORWARD:
@@ -154,7 +162,6 @@ int chase_bulge(struct bulge_info *bi) {
 
 		r = bulge_position + 1;
 		c = bulge_position;
-		printf("bp=%u bs=%u r=%u c=%u\n", bulge_position, bulge_size, r, c);
 		create_house_matrix_packed(bulge_size - 1, 0.0, &bi->M[c + r*bi->order], bi->order, vv);
 		break;
 	case CHASE_BACKWARD:
@@ -164,7 +171,8 @@ int chase_bulge(struct bulge_info *bi) {
 
 		r = bulge_position + bulge_size - 1;
 		c = bulge_position + bulge_size - 2;
-		printf("bp=%u bs=%u r=%u c=%u\n", bulge_position, bulge_size, r, c);
+		printf("CREATING HOUSE VEC FROM THE FOLLOWING MAT: bp=%lu bs=%lu r=%u c=%u sz=%lu\n", bulge_position, bulge_size, r, c, bulge_size-1);
+		ssm(bi->order, bi->M);
 		create_house_matrix_packed(bulge_size - 1, 0.0, &bi->M[c + r*bi->order], -1, vv);
 		break;
 	}
