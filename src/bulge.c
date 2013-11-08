@@ -46,10 +46,13 @@ int form_bulge(struct bulge_info *bi, size_t order, double *M, size_t nshifts,
                double *shifts, enum chase_direction direction) {
 	size_t bulge_size = nshifts + 2;
 	size_t bulge_position;
+	int read_direction;
+	double *tempM;
 
 	double vv[bulge_size * (bulge_size + 1)/2];
 
 	size_t shiftidx, r, c;
+
 
 	/* populate bulge_info structure now so it can serve as a useful "return
 	 * value" */
@@ -68,12 +71,27 @@ int form_bulge(struct bulge_info *bi, size_t order, double *M, size_t nshifts,
 		switch (direction) {
 		case CHASE_FORWARD:
 			bulge_position = 0;
-			create_house_matrix_packed(bulge_size, shifts[shiftidx], M, order, vv);
+			read_direction = 1;
+
+			/* build up vv by pulling out v from top to bottom */
+			r = 0;
+			c = 0;
+			tempM = &M[c + r*order];
+			create_house_matrix_packed(bulge_size, shifts[shiftidx], tempM, order, vv);
 			break;
+
 		case CHASE_BACKWARD:
 			bulge_position = order - bulge_size;
-			create_house_matrix_packed(bulge_size, shifts[shiftidx], &M[order*order-2], -1, vv);
+			read_direction = -1;
+
+			/* build up vv by pulling out v from right to left (the vector gets
+			 * read backwards when the stride is negative) */
+			r = order - 1;
+			c = order - 2 - shiftidx;
+			tempM = &M[c + r*order];
+			create_house_matrix_packed(bulge_size, shifts[shiftidx], tempM, -1, vv);
 			break;
+
 		default:
 			return FORM_BULGE_ERROR;
 		}
@@ -81,13 +99,19 @@ int form_bulge(struct bulge_info *bi, size_t order, double *M, size_t nshifts,
 		/* use vv to process each small col and row which intersects with the bulge zone */
 		for (c = 0; c < order; c++) {
 			r = bulge_position;
-			/* this is still running the wrong way when we go backwards... */
-			cblas_dspmv(CblasRowMajor, CblasUpper, bulge_size, -2.0, vv, &M[c + r*order], order, 1.0, &M[c + r*order], order);
+			tempM = &M[c + r*order];
+			cblas_dspmv(CblasRowMajor, CblasUpper, bulge_size, -2.0, vv,
+				tempM, read_direction*order,
+				1.0,
+				tempM, read_direction*order);
 		}
 		for (r = 0; r < order; r++) {
 			c = bulge_position;
-			/* this is still running the wrong way when we go backwards... */
-			cblas_dspmv(CblasRowMajor, CblasUpper, bulge_size, -2.0, vv, &M[c + r*order], 1,     1.0, &M[c + r*order], 1);
+			tempM = &M[c + r*order];
+			cblas_dspmv(CblasRowMajor, CblasUpper, bulge_size, -2.0, vv,
+				tempM, read_direction*1,
+				1.0,
+				tempM, read_direction*1);
 		}
 
 		/* OPTIMIZATION: we can unroll the first few hits to the above loops */
