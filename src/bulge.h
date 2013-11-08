@@ -14,10 +14,13 @@ struct bulge_info {
 	size_t steps_chased;
 };
 
-int form_bulge(struct bulge_info *bi, size_t order, double *M, size_t nshifts, double *shifts);
-int chase_bulge(struct bulge_info *bi);
+int form_bulge(struct bulge_info *bi,
+               size_t order,
+               double *M,
+               size_t nshifts,
+               double *shifts);
 
-void bulge_chase_peter(size_t A_NxN, double *A, size_t shifts_count, double *shifts);
+int chase_bulge(struct bulge_info *bi);
 
 #endif
 

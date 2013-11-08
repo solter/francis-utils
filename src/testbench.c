@@ -40,8 +40,6 @@ double Ahess[] = {
 int main(int argc, char *argv[]) {
 	double shifts[] = {0, 0, 0, 1,1,2,24,24,2,42,4};
 
-	//bulge_chase_peter(Ahess_N, Ahess, 2, shifts);
-
 	struct bulge_info b;
 	int i;
 
@@ -59,9 +57,6 @@ int main(int argc, char *argv[]) {
 		ssm(b.order, b.M);
 		printf("eig(M)\n");
 	} while (i > 0);
-
-	printf("%%finally done...\n");
-	ssm(b.order, b.M);
 
 	return EXIT_SUCCESS;
 }

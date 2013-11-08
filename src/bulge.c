@@ -28,7 +28,7 @@ int form_bulge(struct bulge_info *bi, size_t order, double *M, size_t nshifts, d
 	const size_t vv_sz = bulge_size * (bulge_size + 1)/2;
 	double vv[vv_sz]; /* for holding v * v^T */
 
-	int i, j, r, c;
+	size_t i, j, r, c;
 
 	/* populate bulge_info structure now so it can serve as a useful "return
 	 * value" */
@@ -69,7 +69,7 @@ int form_bulge(struct bulge_info *bi, size_t order, double *M, size_t nshifts, d
 		bi->nshifts_applied = i + 1;
 	}
 
-	return (bi->order - 2);
+	return (bi->order - 2); /* number of shifts needed to eradicate the bulge */
 }
 
 
