@@ -38,22 +38,31 @@ double Ahess[] = {
 0,0,0,0,0,-3.3022,7.2255,
 };
 
+double Simp[] = {
+	2,2,2,2,
+	1,2,2,2,
+	0,1,2,2,
+	0,0,1,2,
+};
+
 
 
 int main(int argc, char *argv[]) {
 	double shifts[] = {0, 0, 0, 1,1,2,24,24,2,42,4};
-
-	struct bulge_info b;
+	double *M = Simp;
+	size_t N = 4;
 	int i;
 
-	ssmd("%%original matrix", Ahess_N, Ahess);
+	struct bulge_info b;
 
-	i = form_bulge(&b, Ahess_N, Ahess, 1, shifts, CHASE_FORWARD);
-
-	ssmd("%%new shiny bulge", b.order, b.M);
-
+	ssmd("%original matrix", N, M);
+#if 1
+	i = form_bulge(&b, N, M, 1, shifts, CHASE_FORWARD);
+#else
+	i = form_bulge(&b, N, M, 1, shifts, CHASE_BACKWARD);
+#endif
+	ssmd("%new shiny bulge", b.order, b.M);
 	printf("%%need to chase it for %u steps; start the chase!\n\n", i);
-
 	do {
 		i = chase_bulge(&b);
 		printf("%%have %u steps to go, just completed number %lu, here's the result:\n\n", i, b.steps_chased);
