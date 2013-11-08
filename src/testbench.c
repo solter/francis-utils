@@ -7,6 +7,9 @@
 #include "bulge.h"
 #include "util.h"
 
+/* NOTE: BLAS routine conventions: target is last, size comes before operand,
+ * incX comes after */
+
 
 
 const size_t Anorm_N = 7, Ahess_N = 7;
@@ -45,7 +48,7 @@ int main(int argc, char *argv[]) {
 
 	ssmd("%%original matrix", Ahess_N, Ahess);
 
-	i = form_bulge(&b, Ahess_N, Ahess, 1, shifts);
+	i = form_bulge(&b, Ahess_N, Ahess, 1, shifts, CHASE_FORWARD);
 
 	ssmd("%%new shiny bulge", b.order, b.M);
 
