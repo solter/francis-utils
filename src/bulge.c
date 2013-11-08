@@ -67,12 +67,12 @@ int form_bulge(struct bulge_info *bi, size_t order, double *M, size_t nshifts,
 
 		switch (direction) {
 		case CHASE_FORWARD:
-			create_house_matrix_packed(bulge_size, shifts[shiftidx], M, order, vv);
 			bulge_position = 0;
+			create_house_matrix_packed(bulge_size, shifts[shiftidx], M, order, vv);
 			break;
 		case CHASE_BACKWARD:
-			create_house_matrix_packed(bulge_size, shifts[shiftidx], &M[order*order-2], -1, vv);
 			bulge_position = order - bulge_size;
+			create_house_matrix_packed(bulge_size, shifts[shiftidx], &M[order*order-2], -1, vv);
 			break;
 		default:
 			return FORM_BULGE_ERROR;
@@ -81,10 +81,12 @@ int form_bulge(struct bulge_info *bi, size_t order, double *M, size_t nshifts,
 		/* use vv to process each small col and row which intersects with the bulge zone */
 		for (c = 0; c < order; c++) {
 			r = bulge_position;
+			/* this is still running the wrong way when we go backwards... */
 			cblas_dspmv(CblasRowMajor, CblasUpper, bulge_size, -2.0, vv, &M[c + r*order], order, 1.0, &M[c + r*order], order);
 		}
 		for (r = 0; r < order; r++) {
 			c = bulge_position;
+			/* this is still running the wrong way when we go backwards... */
 			cblas_dspmv(CblasRowMajor, CblasUpper, bulge_size, -2.0, vv, &M[c + r*order], 1,     1.0, &M[c + r*order], 1);
 		}
 
@@ -105,31 +107,46 @@ int form_bulge(struct bulge_info *bi, size_t order, double *M, size_t nshifts,
  */
 int chase_bulge(struct bulge_info *bi) {
 	size_t bulge_size = bi->nshifts_applied + 2;
-	size_t bulge_offset;
-
+	size_t bulge_position;
 	double vv[bulge_size * (bulge_size + 1)/2];
-	size_t b_N = bi->nshifts_applied + 1;
-
 	int r, c;
 	
 	if (bi->steps_chased < bi->order - 2) {
-		bulge_offset = bi->steps_chased;
-		b_N = bi->nshifts_applied + 1;
 
-		create_house_matrix_packed(b_N, 0.0, &(bi->M[bulge_offset + (bulge_offset+1)*bi->order]), bi->order, vv);
+		switch (bi->direction) {
+		case CHASE_FORWARD:
+			bulge_position = bi->steps_chased;
+
+			r = bulge_position + 1;
+			c = bulge_position;
+			printf("bp=%u bs=%u r=%u c=%u\n", bulge_position, bulge_size, r, c);
+			create_house_matrix_packed(bulge_size - 1, 0.0, &bi->M[c + r*bi->order], bi->order, vv);
+			break;
+		case CHASE_BACKWARD:
+			bulge_position = bi->order - bulge_size - bi->steps_chased;
+
+			r = bulge_position + bulge_size - 1;
+			c = bulge_position + bulge_size - 2;
+			printf("bp=%u bs=%u r=%u c=%u\n", bulge_position, bulge_size, r, c);
+			create_house_matrix_packed(bulge_size - 1, 0.0, &bi->M[c + r*bi->order], -1, vv);
+			break;
+		}
 
 		/* use vv to process each small col and row which intersects with the bulge zone */
 		for (c = 0; c < bi->order; c++) {
-			r = bulge_offset + 1;
-			cblas_dspmv(CblasRowMajor, CblasUpper, b_N, -2.0, vv, &bi->M[c + r*bi->order], bi->order, 1.0, &bi->M[c + r*bi->order], bi->order);
+			r = bulge_position + 1;
+			/* this is still running "backwards" */
+			cblas_dspmv(CblasRowMajor, CblasUpper, bulge_size - 1, -2.0, vv, &bi->M[c + r*bi->order], bi->order, 1.0, &bi->M[c + r*bi->order], bi->order);
 		}
 		for (r = 0; r < bi->order; r++) {
-			c = bulge_offset + 1;
-			cblas_dspmv(CblasRowMajor, CblasUpper, b_N, -2.0, vv, &bi->M[c + r*bi->order], 1,     1.0, &bi->M[c + r*bi->order], 1);
+			c = bulge_position + 1;
+			/* this is still running the wrong way when we go backwards... */
+			cblas_dspmv(CblasRowMajor, CblasUpper, bulge_size - 1, -2.0, vv, &bi->M[c + r*bi->order], 1,         1.0, &bi->M[c + r*bi->order], 1);
 		}
 
 		bi->steps_chased++;
 	}
+
 	return (bi->order - 2 - bi->steps_chased);
 }
 
