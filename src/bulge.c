@@ -47,17 +47,11 @@ static void create_house_matrix_packed(size_t order, double shift, double *sourc
  *
  * Returns the number of chasing steps needed to chase the bulge or -1 on error.
  */
-int form_bulge(struct bulge_info *bi, size_t order, double *M, size_t nshifts,
-               double *shifts, enum chase_direction direction) {
-	size_t bulge_size = nshifts + 2;
-	size_t bulge_position;
-	int read_direction;
-	double *tempM;
-
-	double vv[bulge_size * (bulge_size + 1)/2];
-
-	size_t shiftidx, r, c;
-
+int form_bulge(struct bulge_info *bi, const size_t order, double *M, const size_t nshifts,
+               double *shifts, const enum chase_direction direction) {
+	size_t bulge_size, bulge_position, householder_stride, shiftidx, r, c;
+	double vv[(nshifts + 2) * (nshifts + 2 + 1)/2];
+	short data_stride_sign;
 
 	/* populate bulge_info structure now so it can serve as a useful "return
 	 * value" */
@@ -75,49 +69,48 @@ int form_bulge(struct bulge_info *bi, size_t order, double *M, size_t nshifts,
 
 		switch (direction) {
 		case CHASE_FORWARD:
-			bulge_position = 0;
-			read_direction = 1;
 
 			/* build up vv by pulling out v from top to bottom */
+			bulge_position = 0;
+			householder_stride = order;
+			data_stride_sign = 1;
 			r = 0;
 			c = 0;
-			tempM = &M[c + r*order];
-			create_house_matrix_packed(bulge_size, shifts[shiftidx], tempM, order, vv);
 			break;
 
 		case CHASE_BACKWARD:
-			bulge_position = order - bulge_size;
-			read_direction = -1;
 
 			/* build up vv by pulling out v from right to left (the vector gets
 			 * read backwards--i.e. ending at the indicated point--when the
 			 * stride is negative) */
+			bulge_position = order - bulge_size;
+			householder_stride = -1;
+			data_stride_sign = -1;
 			r = order - 1;
 			c = order - 2 - shiftidx;
-			tempM = &M[c + r*order];
-			create_house_matrix_packed(bulge_size, shifts[shiftidx], tempM, -1, vv);
 			break;
 
 		default:
 			return FORM_BULGE_ERROR;
 		}
 
+		create_house_matrix_packed(bulge_size, shifts[shiftidx],
+			&M[c + r*order], householder_stride, vv);
+
 		/* use vv to process each small col and row which intersects with the bulge zone */
 		for (c = 0; c < order; c++) {
 			r = bulge_position;
-			tempM = &M[c + r*order];
 			cblas_dspmv(CblasRowMajor, CblasUpper, bulge_size, -2.0, vv,
-				tempM, read_direction*order,
+				&M[c + r*order], data_stride_sign*order,
 				1.0,
-				tempM, read_direction*order);
+				&M[c + r*order], data_stride_sign*order);
 		}
 		for (r = 0; r < order; r++) {
 			c = bulge_position;
-			tempM = &M[c + r*order];
 			cblas_dspmv(CblasRowMajor, CblasUpper, bulge_size, -2.0, vv,
-				tempM, read_direction*1,
+				&M[c + r*order], data_stride_sign*1,
 				1.0,
-				tempM, read_direction*1);
+				&M[c + r*order], data_stride_sign*1);
 		}
 
 		/* OPTIMIZATION: we can unroll the first few hits to the above loops
@@ -127,7 +120,7 @@ int form_bulge(struct bulge_info *bi, size_t order, double *M, size_t nshifts,
 		bi->nshifts_applied = shiftidx + 1;
 	}
 
-	return (bi->order - 2); /* number of shifts needed to eradicate the bulge */
+	return (order - 2); /* number of shifts needed to eradicate the bulge */
 }
 
 
@@ -137,8 +130,7 @@ int form_bulge(struct bulge_info *bi, size_t order, double *M, size_t nshifts,
  * returns number of steps left to do
  */
 int chase_bulge(struct bulge_info *bi) {
-	size_t bulge_size;
-	size_t bulge_position;
+	size_t bulge_size, bulge_position;
 	int r, c;
 	
 	/* stop now if we've already chased the bulge off the matrix */
@@ -188,7 +180,6 @@ int chase_bulge(struct bulge_info *bi) {
 		/* this is still running the wrong way when we go backwards... */
 		cblas_dspmv(CblasRowMajor, CblasUpper, bulge_size - 1, -2.0, vv, &bi->M[c + r*bi->order], 1,         1.0, &bi->M[c + r*bi->order], 1);
 	}
-
 
 	/* keep an accurate count */
 	bi->steps_chased++;
