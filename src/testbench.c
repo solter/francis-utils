@@ -47,7 +47,37 @@ double Simp[] = {
 
 
 
-int main(int argc, char *argv[]) {
+void test_two_way(void) {
+	double *M = Ahess;
+	size_t N = Ahess_N;
+
+	struct bulge_info forward, backward;
+
+	double forward_shifts[] = {2};
+	double backward_shifts[] = {3};
+
+	ssmd("original matrix", N, M);
+
+	form_bulge(&forward, N, M, 1, forward_shifts, CHASE_FORWARD);
+	ssmd("with forward shift", N, M);
+
+	form_bulge(&backward, N, M, 1, backward_shifts, CHASE_BACKWARD);
+	ssmd("with backward shift as well", N, M);
+
+	chase_bulge(&forward);
+	ssmd("chased forward", N, M);
+
+	chase_bulge(&backward);
+	ssmd("chased backward", N, M);
+
+	chase_bulge(&forward);
+	ssmd("chased forward", N, M);
+
+	chase_bulge(&backward);
+	ssmd("chased backward (nonsensical)", N, M);
+}
+
+void test_development(void) {
 	double shifts[] = {0, 0, 0, 1,1,2,24,24,2,42,4};
 	double *M = Ahess;
 	size_t N = 7;
@@ -71,7 +101,12 @@ int main(int argc, char *argv[]) {
 		ssm(b.order, b.M);
 		printf("eig(M)\n");
 	} while (i > 0);
+}
 
+
+
+int main(int argc, char *argv[]) {
+	test_two_way();
 	return EXIT_SUCCESS;
 }
 
