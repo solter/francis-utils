@@ -81,8 +81,8 @@ int form_bulge(struct bulge_info *bi, const size_t order, double *M, const size_
 		case CHASE_BACKWARD:
 
 			/* build up vv by pulling out v from right to left (the vector gets
-			 * read backwards--i.e. ending at the indicated point--when the
-			 * stride is negative) */
+			 * read backwards--i.e. ending at M[r,c] but starting further along
+			 * in the matrix--when the stride is negative) */
 			bulge_position = order - bulge_size;
 			householder_stride = -1;
 			M_data_stride_sign = -1;
