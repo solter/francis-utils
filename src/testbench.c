@@ -64,16 +64,16 @@ void test_two_way(void) {
 	form_bulge(&backward, N, M, 1, backward_shifts, CHASE_BACKWARD);
 	ssmd("with backward shift as well", N, M);
 
-	chase_bulge(&forward);
+	chase_bulge_step(&forward);
 	ssmd("chased forward", N, M);
 
-	chase_bulge(&backward);
+	chase_bulge_step(&backward);
 	ssmd("chased backward", N, M);
 
-	chase_bulge(&forward);
+	chase_bulge_step(&forward);
 	ssmd("chased forward", N, M);
 
-	chase_bulge(&backward);
+	chase_bulge_step(&backward);
 	ssmd("chased backward (nonsensical)", N, M);
 }
 
@@ -96,7 +96,7 @@ void test_development(void) {
 	ssmd("%new shiny bulge", b.order, b.M);
 	printf("%%need to chase it for %u steps; start the chase!\n\n", i);
 	do {
-		i = chase_bulge(&b);
+		i = chase_bulge_step(&b);
 		printf("%%have %u steps to go, just completed number %lu, here's the result:\n\n", i, b.steps_chased);
 		ssm(b.order, b.M);
 		printf("eig(M)\n");

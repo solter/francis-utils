@@ -6,9 +6,13 @@
 #include <stddef.h>
 
 void showmat(size_t nrows, size_t ncols, double *M);
+void smd(const char *description, size_t nrows, size_t ncols, double *M);
+
 void ssm(size_t order, double *M);
 void ssmd(const char *description, size_t order, double *M);
+
 void srv(size_t length, double *v);
+
 void scvd(const char *description, size_t length, double *v);
 
 #endif

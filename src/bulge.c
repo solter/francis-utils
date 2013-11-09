@@ -50,7 +50,7 @@ static void create_house_matrix_packed(size_t order, double shift, double *sourc
 int form_bulge(struct bulge_info *bi, const size_t order, double *M, const size_t nshifts,
                double *shifts, const enum chase_direction direction) {
 	size_t bulge_size, bulge_position, householder_stride, shiftidx, r, c;
-	double vv[(nshifts + 2) * (nshifts + 2 + 1)/2];
+	double house[(nshifts + 2) * (nshifts + 2 + 1)/2];
 	short M_data_stride_sign;
 
 	/* populate bulge_info structure now so it can serve as a useful "return
@@ -70,7 +70,7 @@ int form_bulge(struct bulge_info *bi, const size_t order, double *M, const size_
 		switch (direction) {
 		case CHASE_FORWARD:
 
-			/* build up vv by pulling out v from top to bottom */
+			/* build up house by pulling out v from top to bottom */
 			bulge_position = 0;
 			householder_stride = order;
 			M_data_stride_sign = 1;
@@ -80,7 +80,7 @@ int form_bulge(struct bulge_info *bi, const size_t order, double *M, const size_
 
 		case CHASE_BACKWARD:
 
-			/* build up vv by pulling out v from right to left (the vector gets
+			/* build up house by pulling out v from right to left (the vector gets
 			 * read backwards--i.e. ending at M[r,c] but starting further along
 			 * in the matrix--when the stride is negative) */
 			bulge_position = order - bulge_size;
@@ -95,19 +95,19 @@ int form_bulge(struct bulge_info *bi, const size_t order, double *M, const size_
 		}
 
 		create_house_matrix_packed(bulge_size, shifts[shiftidx],
-			&M[c + r*order], householder_stride, vv);
+			&M[c + r*order], householder_stride, house);
 
-		/* use vv to process each small col and row which intersects with the bulge zone */
+		/* use house to process each small col and row which intersects with the bulge zone */
 		for (c = 0; c < order; c++) { /* small cols */
 			r = bulge_position;
-			cblas_dspmv(CblasRowMajor, CblasUpper, bulge_size, -2.0, vv,
+			cblas_dspmv(CblasRowMajor, CblasUpper, bulge_size, -2.0, house,
 				&M[c + r*order], M_data_stride_sign*order,
 				1.0,
 				&M[c + r*order], M_data_stride_sign*order);
 		}
 		for (r = 0; r < order; r++) { /* small rows */
 			c = bulge_position;
-			cblas_dspmv(CblasRowMajor, CblasUpper, bulge_size, -2.0, vv,
+			cblas_dspmv(CblasRowMajor, CblasUpper, bulge_size, -2.0, house,
 				&M[c + r*order], M_data_stride_sign*1,
 				1.0,
 				&M[c + r*order], M_data_stride_sign*1);
@@ -129,7 +129,7 @@ int form_bulge(struct bulge_info *bi, const size_t order, double *M, const size_
  *
  * returns number of steps left to do
  */
-int chase_bulge(struct bulge_info *bi) {
+int chase_bulge_step(struct bulge_info *bi) {
 	size_t bulge_size, bulge_position, householder_stride;
 	short M_data_stride_sign;
 	size_t r, c;
@@ -146,8 +146,8 @@ int chase_bulge(struct bulge_info *bi) {
 		bulge_size = bi->order - bi->steps_chased;
 	}
 
-	/* build Householder matrix vv */
-	double vv[bulge_size * (bulge_size + 1)/2];
+	/* build Householder matrix house */
+	double house[bulge_size * (bulge_size + 1)/2];
 
 	switch (bi->direction) {
 	case CHASE_FORWARD:
@@ -166,15 +166,15 @@ int chase_bulge(struct bulge_info *bi) {
 		break;
 	}
 
-	create_house_matrix_packed(bulge_size - 1, 0.0, &bi->M[c + r*bi->order], householder_stride, vv);
+	create_house_matrix_packed(bulge_size - 1, 0.0, &bi->M[c + r*bi->order], householder_stride, house);
 
-	/* use vv to process each small col and row which intersects with the bulge zone */
+	/* use house to process each small col and row which intersects with the bulge zone */
 	switch (bi->direction) {
 	case CHASE_FORWARD:  r = bulge_position + 1; break;
 	case CHASE_BACKWARD: r = bulge_position; break;
 	}
 	for (c = 0; c < bi->order; c++) { /* small cols */
-		cblas_dspmv(CblasRowMajor, CblasUpper, bulge_size - 1, -2.0, vv,
+		cblas_dspmv(CblasRowMajor, CblasUpper, bulge_size - 1, -2.0, house,
 			&bi->M[c + r*bi->order], M_data_stride_sign*bi->order,
 			1.0,
 			&bi->M[c + r*bi->order], M_data_stride_sign*bi->order);
@@ -185,7 +185,7 @@ int chase_bulge(struct bulge_info *bi) {
 	case CHASE_BACKWARD: c = bulge_position; break;
 	}
 	for (r = 0; r < bi->order; r++) { /* small rows */
-		cblas_dspmv(CblasRowMajor, CblasUpper, bulge_size - 1, -2.0, vv,
+		cblas_dspmv(CblasRowMajor, CblasUpper, bulge_size - 1, -2.0, house,
 			&bi->M[c + r*bi->order], M_data_stride_sign*1,
 			1.0,
 			&bi->M[c + r*bi->order], M_data_stride_sign*1);

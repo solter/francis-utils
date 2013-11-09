@@ -5,13 +5,23 @@
 #define BULGE_H
 #include <stddef.h>
 
+
+
 #define FORM_BULGE_ERROR (-1)
 
+
+
+/** Parameter to form_bulge(...) which determines whether the bulge steps
+ * top-left to bottom-right or the opposite direction each time form_bulge(...)
+ * is called. */
 enum chase_direction {
 	CHASE_FORWARD = (int) 'F',
 	CHASE_BACKWARD = (int) 'B'
 };
 
+
+
+/** Housekeeping structure for form_bulge and chase_bulge_step. */
 struct bulge_info {
 	size_t nshifts;
 	size_t nshifts_applied;
@@ -22,6 +32,8 @@ struct bulge_info {
 	size_t steps_chased;
 };
 
+
+
 int form_bulge(struct bulge_info *bi,
                size_t order,
                double *M,
@@ -29,7 +41,8 @@ int form_bulge(struct bulge_info *bi,
                double *shifts,
                enum chase_direction direction);
 
-int chase_bulge(struct bulge_info *bi);
+int chase_bulge_step(struct bulge_info *bi);
+
 
 #endif
 
