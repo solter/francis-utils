@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <cblas.h>
 #include "bulge.h"
 #include "util.h"
 
@@ -77,6 +78,40 @@ void test_two_way(void) {
 	ssmd("chased backward (nonsensical)", N, M);
 }
 
+void test_qr_algorithm(void) {
+	double *M = Ahess;
+	size_t N = 7;
+	double error, tol = 0.000001;
+
+	size_t i;
+	struct bulge_info bi;
+
+	double shifts[2];
+
+	do {
+
+		/* use last two sub-diagonal entries as shifts */
+		shifts[0] = M[N-2 + (N-1)*N];
+		shifts[1] = M[N-3 + (N-2)*N];
+
+		/* use last two diagonal entries as shifts */
+		//shifts[0] = M[N-1 + (N-1)*N];
+		//shifts[1] = M[N-2 + (N-2)*N];
+
+		build_and_chase_bulge(N, M, 2, shifts, CHASE_FORWARD);
+
+		error = cblas_dnrm2(N-1, &M[N], N+1);
+
+		printf("iteration complete with shifts %f %f, error = %6.18f\n", shifts[0], shifts[1], error);
+		ssm(N, M);
+		printf("press <enter> to do another iteration, or q<enter> to quit\n");
+		if (getchar() == 'q') return;
+
+	} while (error > tol);
+
+	ssmd("output of QR algorithm", N, M);
+}
+
 void test_development(void) {
 	double shifts[] = {0, 0, 0, 1,1,2,24,24,2,42,4};
 	double *M = Ahess;
@@ -106,7 +141,8 @@ void test_development(void) {
 
 
 int main(int argc, char *argv[]) {
-	test_two_way();
+	//test_two_way();
+	test_qr_algorithm();
 	return EXIT_SUCCESS;
 }
 

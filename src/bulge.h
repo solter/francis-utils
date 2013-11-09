@@ -43,6 +43,10 @@ int form_bulge(struct bulge_info *bi,
 
 int chase_bulge_step(struct bulge_info *bi);
 
+int build_and_chase_bulge(size_t order, double *M, size_t nshifts, double *shifts,
+                           enum chase_direction direction);
+
+
 
 #endif
 

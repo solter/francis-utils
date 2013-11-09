@@ -198,3 +198,25 @@ int chase_bulge_step(struct bulge_info *bi) {
 	return steps_remaining;
 }
 
+
+
+/** Build and chase bulge through matrix
+ *
+ * Returns -1 on error, 0 otherwise. */
+int build_and_chase_bulge(size_t order, double *M, size_t nshifts, double *shifts,
+                           enum chase_direction direction) {
+	struct bulge_info bi;
+	size_t i;
+
+	if (-1 == form_bulge(&bi, order, M, nshifts, shifts, direction)) {
+		return -1;
+	}
+
+	do {
+		i = chase_bulge_step(&bi);
+		if (-1 == i) {
+			return -1;
+		}
+	} while (i > 0);
+}
+
