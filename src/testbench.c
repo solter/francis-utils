@@ -49,16 +49,18 @@ double Simp[] = {
 
 int main(int argc, char *argv[]) {
 	double shifts[] = {0, 0, 0, 1,1,2,24,24,2,42,4};
-	double *M = Ahess;
-	size_t N = 7;
+	double *M = Simp;
+	size_t N = 4;
 	int i;
 
 	struct bulge_info b;
 
 	ssmd("%original matrix", N, M);
-#if 1
+#if 0
+	puts("\n\n\n\n\n\nRUNNING FORWARD...");
 	i = form_bulge(&b, N, M, 2, shifts, CHASE_FORWARD);
 #else
+	puts("\n\n\n\n\n\nRUNNING BACKWARD...");
 	i = form_bulge(&b, N, M, 2, shifts, CHASE_BACKWARD);
 #endif
 	ssmd("%new shiny bulge", b.order, b.M);
