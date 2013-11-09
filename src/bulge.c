@@ -30,7 +30,6 @@ static void create_house_matrix_packed(size_t order, double shift, double *sourc
 
 	/* create and normalize householder vector h */
 	cblas_dcopy(order, source, incs, h, 1);
-	//srv(order, h);
 	h[0] += MYSIGN(h[0]) * cblas_dnrm2(order, h, 1);
 	h[0] -= shift;
 	cblas_dscal(order, 1.0 / cblas_dnrm2(order, h, 1), h, 1);
@@ -101,7 +100,6 @@ int form_bulge(struct bulge_info *bi, const size_t order, double *M, const size_
 		/* use vv to process each small col and row which intersects with the bulge zone */
 		for (c = 0; c < order; c++) { /* small cols */
 			r = bulge_position;
-			printf("FORM SMALL COL CURSOR: r,c=%lu,%lu   bs=%lu   bp=%lu\n", r, c, bulge_size, bulge_position);
 			cblas_dspmv(CblasRowMajor, CblasUpper, bulge_size, -2.0, vv,
 				&M[c + r*order], M_data_stride_sign*order,
 				1.0,
@@ -109,7 +107,6 @@ int form_bulge(struct bulge_info *bi, const size_t order, double *M, const size_
 		}
 		for (r = 0; r < order; r++) { /* small rows */
 			c = bulge_position;
-			printf("FORM SMALL ROW CURSOR: r,c=%lu,%lu   bs=%lu   bp=%lu\n", r, c, bulge_size, bulge_position);
 			cblas_dspmv(CblasRowMajor, CblasUpper, bulge_size, -2.0, vv,
 				&M[c + r*order], M_data_stride_sign*1,
 				1.0,
@@ -169,8 +166,6 @@ int chase_bulge(struct bulge_info *bi) {
 		break;
 	}
 
-	//printf("CREATING HOUSE VEC FROM THE FOLLOWING MAT: bp=%lu bs=%lu r=%u c=%u sz=%lu\n", bulge_position, bulge_size, r, c, bulge_size-1);
-	//ssm(bi->order, bi->M);
 	create_house_matrix_packed(bulge_size - 1, 0.0, &bi->M[c + r*bi->order], householder_stride, vv);
 
 	/* use vv to process each small col and row which intersects with the bulge zone */
@@ -179,7 +174,6 @@ int chase_bulge(struct bulge_info *bi) {
 	case CHASE_BACKWARD: r = bulge_position; break;
 	}
 	for (c = 0; c < bi->order; c++) { /* small cols */
-		printf("CHASE SMALL COL CURSOR: r,c=%lu,%lu   bs=%lu   bp=%lu\n", r, c, bulge_size, bulge_position);
 		cblas_dspmv(CblasRowMajor, CblasUpper, bulge_size - 1, -2.0, vv,
 			&bi->M[c + r*bi->order], M_data_stride_sign*bi->order,
 			1.0,
@@ -191,7 +185,6 @@ int chase_bulge(struct bulge_info *bi) {
 	case CHASE_BACKWARD: c = bulge_position; break;
 	}
 	for (r = 0; r < bi->order; r++) { /* small rows */
-		printf("CHASE SMALL ROW CURSOR: r,c=%lu,%lu   bs=%lu   bp=%lu\n", r, c, bulge_size, bulge_position);
 		cblas_dspmv(CblasRowMajor, CblasUpper, bulge_size - 1, -2.0, vv,
 			&bi->M[c + r*bi->order], M_data_stride_sign*1,
 			1.0,

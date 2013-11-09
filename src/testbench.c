@@ -49,8 +49,8 @@ double Simp[] = {
 
 int main(int argc, char *argv[]) {
 	double shifts[] = {0, 0, 0, 1,1,2,24,24,2,42,4};
-	double *M = Simp;
-	size_t N = 4;
+	double *M = Ahess;
+	size_t N = 7;
 	int i;
 
 	struct bulge_info b;
