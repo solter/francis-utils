@@ -60,6 +60,10 @@ void ssmd(const char *description, size_t order, double *M) {
 	printf("\n");
 }
 
+void srv(size_t length, double *v) {
+	showmat(1, length, v);
+}
+
 void scvd(const char *description, size_t length, double *v) {
 	printf("%s:\n\n", description);
 	showmat(length, 1, v);
