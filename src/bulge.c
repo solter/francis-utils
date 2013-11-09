@@ -51,7 +51,7 @@ int form_bulge(struct bulge_info *bi, const size_t order, double *M, const size_
                double *shifts, const enum chase_direction direction) {
 	size_t bulge_size, bulge_position, householder_stride, shiftidx, r, c;
 	double vv[(nshifts + 2) * (nshifts + 2 + 1)/2];
-	short data_stride_sign;
+	short M_data_stride_sign;
 
 	/* populate bulge_info structure now so it can serve as a useful "return
 	 * value" */
@@ -73,7 +73,7 @@ int form_bulge(struct bulge_info *bi, const size_t order, double *M, const size_
 			/* build up vv by pulling out v from top to bottom */
 			bulge_position = 0;
 			householder_stride = order;
-			data_stride_sign = 1;
+			M_data_stride_sign = 1;
 			r = 0;
 			c = 0;
 			break;
@@ -85,7 +85,7 @@ int form_bulge(struct bulge_info *bi, const size_t order, double *M, const size_
 			 * stride is negative) */
 			bulge_position = order - bulge_size;
 			householder_stride = -1;
-			data_stride_sign = -1;
+			M_data_stride_sign = -1;
 			r = order - 1;
 			c = order - 2 - shiftidx;
 			break;
@@ -101,16 +101,17 @@ int form_bulge(struct bulge_info *bi, const size_t order, double *M, const size_
 		for (c = 0; c < order; c++) {
 			r = bulge_position;
 			cblas_dspmv(CblasRowMajor, CblasUpper, bulge_size, -2.0, vv,
-				&M[c + r*order], data_stride_sign*order,
+				&M[c + r*order], M_data_stride_sign*order,
 				1.0,
-				&M[c + r*order], data_stride_sign*order);
+				&M[c + r*order], M_data_stride_sign*order);
 		}
 		for (r = 0; r < order; r++) {
 			c = bulge_position;
+			printf("FORM SMALL ROW CURSOR: r,c=%lu,%lu   bs=%lu   bp=%lu\n", r, c, bulge_size, bulge_position);
 			cblas_dspmv(CblasRowMajor, CblasUpper, bulge_size, -2.0, vv,
-				&M[c + r*order], data_stride_sign*1,
+				&M[c + r*order], M_data_stride_sign*1,
 				1.0,
-				&M[c + r*order], data_stride_sign*1);
+				&M[c + r*order], M_data_stride_sign*1);
 		}
 
 		/* OPTIMIZATION: we can unroll the first few hits to the above loops
