@@ -74,6 +74,8 @@ int form_bulge(struct bulge_info *bi, const size_t order, double *M, const size_
 			bulge_position = 0;
 			householder_stride = order;
 			M_data_stride_sign = 1;
+
+			/* indicate location of vector to build Householder matrix from */
 			r = 0;
 			c = 0;
 			break;
@@ -86,6 +88,8 @@ int form_bulge(struct bulge_info *bi, const size_t order, double *M, const size_
 			bulge_position = order - bulge_size;
 			householder_stride = -1;
 			M_data_stride_sign = -1;
+
+			/* indicate location of vector to build Householder matrix from */
 			r = order - 1;
 			c = order - 2 - shiftidx;
 			break;
@@ -98,15 +102,16 @@ int form_bulge(struct bulge_info *bi, const size_t order, double *M, const size_
 			&M[c + r*order], householder_stride, house);
 
 		/* use house to process each small col and row which intersects with the bulge zone */
+		r = bulge_position;
 		for (c = 0; c < order; c++) { /* small cols */
-			r = bulge_position;
 			cblas_dspmv(CblasRowMajor, CblasUpper, bulge_size, -2.0, house,
 				&M[c + r*order], M_data_stride_sign*order,
 				1.0,
 				&M[c + r*order], M_data_stride_sign*order);
 		}
+
+		c = bulge_position;
 		for (r = 0; r < order; r++) { /* small rows */
-			c = bulge_position;
 			cblas_dspmv(CblasRowMajor, CblasUpper, bulge_size, -2.0, house,
 				&M[c + r*order], M_data_stride_sign*1,
 				1.0,
@@ -154,6 +159,8 @@ int chase_bulge_step(struct bulge_info *bi) {
 		bulge_position = bi->steps_chased;
 		householder_stride = bi->order;
 		M_data_stride_sign = 1;
+
+		/* indicate location of vector to build Householder matrix from */
 		r = bulge_position + 1;
 		c = bulge_position;
 		break;
@@ -161,6 +168,8 @@ int chase_bulge_step(struct bulge_info *bi) {
 		bulge_position = bi->order - bulge_size - bi->steps_chased;
 		householder_stride = -1;
 		M_data_stride_sign = -1;
+
+		/* indicate location of vector to build Householder matrix from */
 		r = bulge_position + bulge_size - 1;
 		c = bulge_position + bulge_size - 1 - bulge_size + 1;
 		break;
