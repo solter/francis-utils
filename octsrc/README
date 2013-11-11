@@ -1,0 +1,26 @@
+This folder contains an optimized version of implicit qr bulge-chasing
+
+impStep.m - octave code which takes a hessenberg form as input.
+Here is how to use it:
+impStep(<Matrix>,<Vector of Shifts>, <true/false>)
+The matrix needs to be hessenberg, the shifts should number
+less than the matrix dimension, and true tells it to
+print the images to png's
+
+hessen.m - octave code which takes a matrix and spits out it's
+hessenberg reduction.
+
+How to create movies:
+the impStep will print out a series of pictures to the folder
+impStepPlots.
+once this is done, go to the folder and type 'make'.
+This will create a new folder (by the name of the date in number
+format), create a gif which loops through all the images,
+then move all these images to the new folder.
+
+warnings: DO NOT have impStep produce 2 series of images without
+creating the gif (or at least moving the png's to another folder) first.
+This will cause havoc the next time you try to create a gif.
+
+This require's imageMagick's convert function - hope the school computers
+have that
