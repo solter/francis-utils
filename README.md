@@ -18,6 +18,6 @@ Contributors
 
   * Alex Hirzel <ahirzel@mtu.edu>, author
   * Allan Struthers <struther@mtu.edu>, instructor
-  * Peter Solfest <pmsolfest@mtu.edu>, collaborator
+  * Peter Solfest <pmsolfes@mtu.edu>, collaborator
   * Ryan Bruner <rwbruner@mtu.edu>, collaborator
 

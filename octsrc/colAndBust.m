@@ -59,17 +59,19 @@ function [H] = colAndBust(A, shifts, toplt)
     H(stIdx:endIdx,:) -= v*((2*v')*H(stIdx:endIdx,:));
     H(1:endIdx+1,stIdx:endIdx) -= (H(1:endIdx+1,stIdx:endIdx)*(2*v))*v';
     H(stIdx+1:endIdx,i) = 0;%zeros everything out for exactness
-    
-    %move bottom bulge
-    endIdx = n-i;
-    stIdx = n-i-sl;
-    v = H(endIdx + 1,stIdx:endIdx);
-    v(end) += sign(v(end))*sqrt(v*v');
-    v /= sqrt(v*v');%normalize house vector
-    H(stIdx:endIdx,stIdx - 1:n) -= v'*((2*v)*H(stIdx:endIdx,stIdx-1:n));
-    H(:,stIdx:endIdx) -= (H(:,stIdx:endIdx)*(2*v'))*v;
-    H(endIdx + 1,stIdx:endIdx-1) = 0;%zeros stuff out for exactness
-    
+   
+    if(endIdx < n-i-sl-1)%if they won't intersect
+      %move bottom bulge
+      endIdx = n-i;
+      stIdx = n-i-sl;
+      v = H(endIdx + 1,stIdx:endIdx);
+      v(end) += sign(v(end))*sqrt(v*v');
+      v /= sqrt(v*v');%normalize house vector
+      H(stIdx:endIdx,stIdx - 1:n) -= v'*((2*v)*H(stIdx:endIdx,stIdx-1:n));
+      H(:,stIdx:endIdx) -= (H(:,stIdx:endIdx)*(2*v'))*v;
+      H(endIdx + 1,stIdx:endIdx-1) = 0;%zeros stuff out for exactness
+    end%if
+
     i++;
     if(toplt)
       pltMat(H);
@@ -85,7 +87,7 @@ function [H] = colAndBust(A, shifts, toplt)
 %    pltMat(bigr'*H*bigr);
 %    SpikeFrame(i) = getframe;
 %    end%if
-  until(i+1+sl >= n-i-sl)
+  until(i+1+sl >= n-i-sl)%if they are touching
 
   if(toplt)
     close all;
