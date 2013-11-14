@@ -6,9 +6,14 @@
 %
 %H must be hessenberg, shifts should be a vector
 %OUTPUTS: The busted open shifts
-function [H] = colAndBust(A, shifts, singBulg=true, toplt=false)
+function [H] = colAndBust(A, topShifts, botShifts, toplt=false)
   H=A;
-  sl = length(shifts);
+  if(length(topShifts) != length(botShifts))
+    printf("shifts must be of same length");
+    return;
+  endif
+
+  sl = length(topShifts);
   
   if(toplt)
     mkdir('impStepPlts');
@@ -22,7 +27,7 @@ function [H] = colAndBust(A, shifts, singBulg=true, toplt=false)
     %add bulge to the top
     %create house vector
     v = H(1:endIdx, 1);
-    v(1) -= shifts(i);
+    v(1) -= topShifts(i);
     v(1) += sign(v(1))*sqrt(v'*v);
     v /= sqrt(v'*v);%normalize house vector
     %apply householder transformation to the right bits
@@ -31,7 +36,7 @@ function [H] = colAndBust(A, shifts, singBulg=true, toplt=false)
 
     %add bulge to the bottom
     v = H(end,(end-endIdx):end);
-    v(end) -= shifts(i);
+    v(end) -= botShifts(i);
     v(end) += sign(v(end))*sqrt(v*v');
     v /= sqrt(v*v');%normalize house vector
     H((end-endIdx):end,:) -= v'*((2*v)*H((end-endIdx):end,:));%many zero multiplies
@@ -60,7 +65,7 @@ function [H] = colAndBust(A, shifts, singBulg=true, toplt=false)
     H(1:endIdx+1,stIdx:endIdx) -= (H(1:endIdx+1,stIdx:endIdx)*(2*v))*v';
     H(stIdx+1:endIdx,i) = 0;%zeros everything out for exactness
    
-    if(endIdx < n-i-sl-1 || singBulg)%if they won't intersect
+    if(endIdx < n-i-sl-1)%if they won't intersect
       %move bottom bulge
       endIdx = n-i;
       stIdx = n-i-sl;
@@ -79,22 +84,21 @@ function [H] = colAndBust(A, shifts, singBulg=true, toplt=false)
       print(sprintf('impStepPlts/impstep%03d.png',++pltNum));
     end%if
 
-    tostop = i+1+sl >= n-i-sl;
-    if(singBulg)
-      tostop = i+1+sl >= n-i;
-    endif
-  until(tostop)%if they are touching
+  until(i+1+sl >= n-i-sl)%if they are touching
 
-    %create spikes
-%    if(0)%(i + 1 + length(shifts) < length(H))
-%    blkIdx = (i+1):(i+1+length(shifts));
-%    subH = H(blkIdx,blkIdx);
-%    [r1,~] = schur(subH);
-%    bigr = eye(size(H));
-%    bigr(blkIdx,blkIdx) = r1;
-%    pltMat(bigr'*H*bigr);
-%    SpikeFrame(i) = getframe;
-%    end%if
+
+  %create spikes
+  blkSt = i;%index of left block
+  blkEnd = blkSt + 2*sl + 1;
+  [spRot,~] = schur(H(blkSt:blkEnd,blkSt:blkEnd));
+  H(1:blkEnd+1,blkSt:blkEnd) = H(1:blkEnd+1,blkSt:blkEnd)*spRot;
+  H(blkSt:blkEnd,(blkSt-1):n) = spRot'*H(blkSt:blkEnd,(blkSt-1):n);
+
+  if(toplt)
+    pltMat(H);
+    print(sprintf('impStepPlts/impstep%03d.png',++pltNum));
+  end%if
+
 
   if(toplt)
     close all;
@@ -104,4 +108,5 @@ end%function
 
 function [] = pltMat(H)
     imagesc(log(abs(H)) + .01);
+    daspect([1 1 1]);
 end%function
