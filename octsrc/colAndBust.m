@@ -6,7 +6,7 @@
 %
 %H must be hessenberg, shifts should be a vector
 %OUTPUTS: The busted open shifts
-function [H] = colAndBust(A, shifts, toplt)
+function [H] = colAndBust(A, shifts, singBulg=true, toplt=false)
   H=A;
   sl = length(shifts);
   
@@ -60,7 +60,7 @@ function [H] = colAndBust(A, shifts, toplt)
     H(1:endIdx+1,stIdx:endIdx) -= (H(1:endIdx+1,stIdx:endIdx)*(2*v))*v';
     H(stIdx+1:endIdx,i) = 0;%zeros everything out for exactness
    
-    if(endIdx < n-i-sl-1)%if they won't intersect
+    if(endIdx < n-i-sl-1 || singBulg)%if they won't intersect
       %move bottom bulge
       endIdx = n-i;
       stIdx = n-i-sl;
@@ -73,10 +73,18 @@ function [H] = colAndBust(A, shifts, toplt)
     end%if
 
     i++;
+
     if(toplt)
       pltMat(H);
       print(sprintf('impStepPlts/impstep%03d.png',++pltNum));
     end%if
+
+    tostop = i+1+sl >= n-i-sl;
+    if(singBulg)
+      tostop = i+1+sl >= n-i;
+    endif
+  until(tostop)%if they are touching
+
     %create spikes
 %    if(0)%(i + 1 + length(shifts) < length(H))
 %    blkIdx = (i+1):(i+1+length(shifts));
@@ -87,11 +95,11 @@ function [H] = colAndBust(A, shifts, toplt)
 %    pltMat(bigr'*H*bigr);
 %    SpikeFrame(i) = getframe;
 %    end%if
-  until(i+1+sl >= n-i-sl)%if they are touching
 
   if(toplt)
     close all;
   end%if
+
 end%function
 
 function [] = pltMat(H)
