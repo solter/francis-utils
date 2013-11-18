@@ -1,3 +1,5 @@
 *.o
 src/testbench
 .*.swp
+*.png
+*.gif
