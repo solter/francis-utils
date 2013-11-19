@@ -11,7 +11,7 @@
 function [H] = colAndBust(A, topShifts, botShifts, toplt=false)
   H=A;
   if(length(topShifts) != length(botShifts))
-    printf("shifts must be of same length");
+    printf("shifts must be of same length\n");
     return;
   endif
 
@@ -30,7 +30,7 @@ function [H] = colAndBust(A, topShifts, botShifts, toplt=false)
     #create house vector
     v = H(1:endIdx, 1);
     v(1) -= topShifts(i);
-    v(1) += sign(v(1))*sqrt(v'*v);
+    v(1) += sgn(v(1))*sqrt(v'*v);
     v /= sqrt(v'*v);#normalize house vector
     #apply householder transformation to the right bits
     H(1:endIdx,:) -= v*((2*v')*H(1:endIdx,:));
@@ -39,7 +39,7 @@ function [H] = colAndBust(A, topShifts, botShifts, toplt=false)
     #add bulge to the bottom
     v = H(end,(end-endIdx):end);
     v(end) -= botShifts(i);
-    v(end) += sign(v(end))*sqrt(v*v');
+    v(end) += sgn(v(end))*sqrt(v*v');
     v /= sqrt(v*v');#normalize house vector
     H((end-endIdx):end,:) -= v'*((2*v)*H((end-endIdx):end,:));#many zero multiplies
     H(:,(end-endIdx):end) -= (H(:,(end-endIdx):end)*(2*v'))*v;
@@ -60,7 +60,7 @@ function [H] = colAndBust(A, topShifts, botShifts, toplt=false)
     #move top bulge
     #create house vector
     v = H(stIdx:endIdx, i);
-    v(1) += sign(v(1))*sqrt(v'*v);
+    v(1) += sgn(v(1))*sqrt(v'*v);
     v /= sqrt(v'*v);#normalize house vector
     #apply householder transformation to the right bits
     H(stIdx:endIdx,:) -= v*((2*v')*H(stIdx:endIdx,:));
@@ -72,7 +72,7 @@ function [H] = colAndBust(A, topShifts, botShifts, toplt=false)
       endIdx = n-i;
       stIdx = n-i-sl;
       v = H(endIdx + 1,stIdx:endIdx);
-      v(end) += sign(v(end))*sqrt(v*v');
+      v(end) += sgn(v(end))*sqrt(v*v');
       v /= sqrt(v*v');#normalize house vector
       H(stIdx:endIdx,stIdx - 1:n) -= v'*((2*v)*H(stIdx:endIdx,stIdx-1:n));
       H(:,stIdx:endIdx) -= (H(:,stIdx:endIdx)*(2*v'))*v;
@@ -107,6 +107,14 @@ function [H] = colAndBust(A, topShifts, botShifts, toplt=false)
   end#if
 
 end#function
+
+function [sn] = sgn(v)
+  if(v >= 0)
+    sn= 1;
+  else
+    sn= -1;
+  endif
+endfunction
 
 function [] = pltMat(H)
     imagesc(log(abs(H)) + .01);
