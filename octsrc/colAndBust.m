@@ -46,7 +46,7 @@ function [H] = colAndBust(A, topShifts, botShifts, toplt=false)
     
     if(toplt)
       pltMat(H);
-      print(sprintf('impStepPlts/impstep#03d.png',++pltNum));
+      print(sprintf('impStepPlts/impstep%03d.png',++pltNum));
     end#if
   end#for
 
@@ -83,7 +83,7 @@ function [H] = colAndBust(A, topShifts, botShifts, toplt=false)
 
     if(toplt)
       pltMat(H);
-      print(sprintf('impStepPlts/impstep#03d.png',++pltNum));
+      print(sprintf('impStepPlts/impstep%03d.png',++pltNum));
     end#if
 
   until(i+1+sl >= n-i-sl)#if they are touching
@@ -98,7 +98,7 @@ function [H] = colAndBust(A, topShifts, botShifts, toplt=false)
 
   if(toplt)
     pltMat(H);
-    print(sprintf('impStepPlts/impstep#03d.png',++pltNum));
+    print(sprintf('impStepPlts/impstep%03d.png',++pltNum));
   end#if
 
 
