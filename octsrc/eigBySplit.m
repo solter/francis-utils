@@ -55,9 +55,9 @@ function [EVal] = eigBySplit(A, isHess = false, shifts = [])
     spike = [H(sp1+2:sp2-1,sp1); H(sp2, sp1+1:sp2-2)'];
     
   endwhile
-  
+  EVal.sp = H;  
   #recollapse to hessenberg
   H = hess(H);
 
-  EVal = H;
+  EVal.h = H;
 endfunction
