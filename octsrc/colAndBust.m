@@ -1,14 +1,24 @@
-##usage: [H] = colAndBust(A,topshifts, botShifts,toplt = false)
+##-*- texinfo -*-
+##@deftypefn{Function File} {[@var{H}, @var{spSt}, @var{spEnd}, @var{pltNum}] =} colAndBust(@var{A},@var{topshifts}, @var{botShifts})
+##@deftypefnx{Function File} {[@var{H}, @var{spSt}, @var{spEnd}, @var{pltNum}] =} colAndBust(@var{A},@var{topshifts}, @var{botShifts},@var{toplt})
 ##
-##This introduces 2 bulges (1 from top and 1 from bottom)
-##which sweep until they meet.
-##Then a Schur decomposition is performed to bust it open
-##and create spikes. Ideally this will reorder it to sort
-## the spikes lowest to hightest
+##This introduces 2 bulges (1 from top and 1 from bottom) which sweep until they meet.@*
+##Then a Schur decomposition is performed to create spikes replacing the bulges.@*
 ##
-##H must be hessenberg, shifts should be a vector
-##OUTPUTS: The busted open shifts
-function [H] = colAndBust(A, topShifts, botShifts, toplt=false)
+##Inputs:@*
+##  @var{A} - A hessenberg matrix. Results will be meaningless if not hessenberg.@*
+##  @var{topshifts}, @var{botshifts} - Lists of shifts to introduce in the top and bottom bulges respectively.
+##    Should be less than ~6 to avoid shift blurring.@*
+##  @var{toplt} - Optional argument. If it is true, this function
+##    will create a directory impStepPlts and plot each step of the
+##    bulge creation and chasing to it.@*
+##
+##Outputs:@*
+##  @var{H} - The matrix A after running 2 bulges into it's center and
+##    creating the spikes@*
+##  @var{spSt}, @var{spEnd} - the indices the spike's column and row respectively
+## @end deftypefn
+function [H, spSt, spEnd, pltNum] = colAndBust(A, topShifts, botShifts, toplt=false)
   H=A;
 
   tsl = length(topShifts);
@@ -110,7 +120,6 @@ function [H] = colAndBust(A, topShifts, botShifts, toplt=false)
     pltMat(H);
     print(sprintf('impStepPlts/impstep%03d.png',++pltNum));
   end#if
-
 
   if(toplt)
     close all;
