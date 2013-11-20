@@ -10,12 +10,9 @@
 ##OUTPUTS: The busted open shifts
 function [H] = colAndBust(A, topShifts, botShifts, toplt=false)
   H=A;
-  if(length(topShifts) != length(botShifts))
-    printf("shifts must be of same length\n");
-    return;
-  endif
 
-  sl = length(topShifts);
+  tsl = length(topShifts);
+  bsl = length(botShifts);
   
   if(toplt)
     mkdir('impStepPlts');
@@ -23,10 +20,11 @@ function [H] = colAndBust(A, topShifts, botShifts, toplt=false)
   end#if
 
   #put shifts into H
-  for i=1:sl
+  
+  #add bulge to the top
+  for i=1:tsl
     endIdx = 1+i;
     
-    #add bulge to the top
     #create house vector
     v = H(1:endIdx, 1);
     v(1) -= topShifts(i);
@@ -36,7 +34,15 @@ function [H] = colAndBust(A, topShifts, botShifts, toplt=false)
     H(1:endIdx,:) -= v*((2*v')*H(1:endIdx,:));
     H(:,1:endIdx) -= (H(:,1:endIdx)*(2*v))*v';#many zero mulitplies
 
-    #add bulge to the bottom
+    if(toplt)
+      pltMat(H);
+      print(sprintf('impStepPlts/impstep%03d.png',++pltNum));
+    end#if
+  endfor
+
+  #add bulge to the bottom
+  for i=1:bsl
+    endIdx = 1+i;
     v = H(end,(end-endIdx):end);
     v(end) -= botShifts(i);
     v(end) += sgn(v(end))*sqrt(v*v');
@@ -52,49 +58,53 @@ function [H] = colAndBust(A, topShifts, botShifts, toplt=false)
 
   #move bulge 1-column over per i
   n = length(H);
-  i=1;
+  tstIdx = 1;
+  tendIdx = 1 + tsl;
+  bendIdx = n;
+  bstIdx = n - bsl;
   do
-    stIdx = i+1;
-    endIdx = i+1 + sl;
+    ++tstIdx;
+    ++tendIdx;
     
     #move top bulge
     #create house vector
-    v = H(stIdx:endIdx, i);
+    v = H(tstIdx:tendIdx, tstIdx-1);
     v(1) += sgn(v(1))*sqrt(v'*v);
     v /= sqrt(v'*v);#normalize house vector
     #apply householder transformation to the right bits
-    H(stIdx:endIdx,:) -= v*((2*v')*H(stIdx:endIdx,:));
-    H(1:endIdx+1,stIdx:endIdx) -= (H(1:endIdx+1,stIdx:endIdx)*(2*v))*v';
-    H(stIdx+1:endIdx,i) = 0;#zeros everything out for exactness
+    H(tstIdx:tendIdx,:) -= v*((2*v')*H(tstIdx:tendIdx,:));
+    H(1:tendIdx+1,tstIdx:tendIdx) -= (H(1:tendIdx+1,tstIdx:tendIdx)*(2*v))*v';
+    H(tstIdx+1:tendIdx,tstIdx-1) = 0;#zeros everything out for exactness
    
-    if(endIdx < n-i-sl-1)#if they won't intersect
+    --bendIdx;
+    --bstIdx;
+    if(tendIdx + 1 < bstIdx)#if they won't intersect
       #move bottom bulge
-      endIdx = n-i;
-      stIdx = n-i-sl;
-      v = H(endIdx + 1,stIdx:endIdx);
+      v = H(bendIdx + 1,bstIdx:bendIdx);
       v(end) += sgn(v(end))*sqrt(v*v');
       v /= sqrt(v*v');#normalize house vector
-      H(stIdx:endIdx,stIdx - 1:n) -= v'*((2*v)*H(stIdx:endIdx,stIdx-1:n));
-      H(:,stIdx:endIdx) -= (H(:,stIdx:endIdx)*(2*v'))*v;
-      H(endIdx + 1,stIdx:endIdx-1) = 0;#zeros stuff out for exactness
+      H(bstIdx:bendIdx,bstIdx - 1:n) -= v'*((2*v)*H(bstIdx:bendIdx,bstIdx-1:n));
+      H(:,bstIdx:bendIdx) -= (H(:,bstIdx:bendIdx)*(2*v'))*v;
+      H(bendIdx + 1,bstIdx:bendIdx-1) = 0;#zeros stuff out for exactness
+    else
+      bendIdx++;
+      bstIdx++;;
     end#if
-
-    i++;
 
     if(toplt)
       pltMat(H);
       print(sprintf('impStepPlts/impstep%03d.png',++pltNum));
     end#if
 
-  until(i+1+sl >= n-i-sl)#if they are touching
+  until(tendIdx + 2 >= bstIdx)#if they are touching
 
 
   #create spikes
-  blkSt = i;#index of left block
-  blkEnd = blkSt + 2*sl + 1;
-  [spRot,~] = schur(H(blkSt:blkEnd,blkSt:blkEnd));
-  H(1:blkEnd+1,blkSt:blkEnd) = H(1:blkEnd+1,blkSt:blkEnd)*spRot;
-  H(blkSt:blkEnd,(blkSt-1):n) = spRot'*H(blkSt:blkEnd,(blkSt-1):n);
+  spSt = tstIdx+1;#index of left block
+  spEnd = bendIdx-1;
+  [spRot,~] = schur(H(spSt:spEnd,spSt:spEnd));
+  H(1:spEnd+1,spSt:spEnd) = H(1:spEnd+1,spSt:spEnd)*spRot;
+  H(spSt:spEnd,(spSt-1):n) = spRot'*H(spSt:spEnd,(spSt-1):n);
 
   if(toplt)
     pltMat(H);
