@@ -116,6 +116,8 @@ function [H, spSt, spEnd, pltNum] = colAndBust(A, topShifts, botShifts, toplt=fa
   H(1:spEnd+1,spSt:spEnd) = H(1:spEnd+1,spSt:spEnd)*spRot;
   H(spSt:spEnd,(spSt-1):n) = spRot'*H(spSt:spEnd,(spSt-1):n);
 
+  spSt--;
+  spEnd++;
   if(toplt)
     pltMat(H);
     print(sprintf('impStepPlts/impstep%03d.png',++pltNum));
