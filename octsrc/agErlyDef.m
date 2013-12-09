@@ -21,8 +21,7 @@
 function [H, pltNum] = agErlyDef(A, Shifts, toplt = false, toprt = false)
   H=A;
 
-  sl = length(Shifts);
-  pl = .2;
+  pl = .2;#pause time when playing real time
   
   if(toplt)
     mkdir('impStepPlts');
@@ -31,48 +30,45 @@ function [H, pltNum] = agErlyDef(A, Shifts, toplt = false, toprt = false)
     toprt = false;
   end#if
 
-  #put shifts into H
-  #add bulge to the top
-  for i=1:sl
-    endIdx = 1+i;
-    
-    #create house vector
-    v = H(1:endIdx, 1);
-    v(1) -= Shifts(i);
-    v(1) += sgn(v(1))*sqrt(v'*v);
-    v /= sqrt(v'*v);#normalize house vector
-    #apply householder transformation to the right bits
-    H(1:endIdx,:) -= v*((2*v')*H(1:endIdx,:));
-    H(:,1:endIdx) -= (H(:,1:endIdx)*(2*v))*v';#many zero mulitplies
-
-    if(toplt)
-      pltMat(H);
-      if(toprt)
-        print(sprintf('impStepPlts/impstep%03d.png',++pltNum));
-      else
-        pause(pl);
-      end#if
-    end#if
-  endfor
-
-
-  #move bulge 1-column over per i
-  stIdx = 1;
-  endIdx = 1 + sl;
+  stIdx = [];#bulge starts
+  endIdx = 1;#end of last bulge
+  bsize = 0;#bulge size
   do
     ++stIdx;
     ++endIdx;
     
-    #move top bulge
-    #create house vector
-    v = H(stIdx:endIdx, stIdx-1);
-    v(1) += sgn(v(1))*sqrt(v'*v);
-    v /= sqrt(v'*v);#normalize house vector
-    #apply householder transformation to the right bits
-    H(stIdx:endIdx,:) -= v*((2*v')*H(stIdx:endIdx,:));
-    H(1:endIdx+1,stIdx:endIdx) -= (H(1:endIdx+1,stIdx:endIdx)*(2*v))*v';
-    H(stIdx+1:endIdx,stIdx-1) = 0;#zeros everything out for exactness
-   
+    #move bulges over
+    tendIdx = endIdx;
+    for tstIdx = stIdx#for each 
+      #create house vector
+      v = H(tstIdx:tendIdx, tstIdx-1);
+      v(1) += sgn(v(1))*sqrt(v'*v);
+      v /= sqrt(v'*v);#normalize house vector
+      #apply householder transformation to the right bits
+      H(tstIdx:tendIdx,:) -= v*((2*v')*H(tstIdx:tendIdx,:));
+      H(1:tendIdx+1,tstIdx:tendIdx) -= (H(1:tendIdx+1,tstIdx:tendIdx)*(2*v))*v';
+      H(tstIdx+1:tendIdx,tstIdx-1) = 0;#zeros everything out for exactness
+      tendIdx = tstIdx;
+    endfor   
+
+    #add shift to top if still need to add shifts
+    if(!isempty(Shifts) && (isempty(stIdx) || stIdx(end) > 2))
+      #create house vector
+      v = H(1:tendIdx, 1);
+      v(1) -= Shifts(1);
+      Shifts(1) = [];
+      v(1) += sgn(v(1))*sqrt(v'*v);
+      v /= sqrt(v'*v);#normalize house vector
+      #apply householder transformation to the right bits
+      H(1:tendIdx,:) -= v*((2*v')*H(1:tendIdx,:));
+      H(:,1:tendIdx) -= (H(:,1:tendIdx)*(2*v))*v';#many zero mulitplies
+     
+      if(++bsize > 3 || isempty(Shifts))
+        stIdx = [stIdx 1];
+        bsize = 0;
+      endif
+    endif
+
     if(toplt)
       pltMat(H);
       if(toprt)
@@ -81,12 +77,12 @@ function [H, pltNum] = agErlyDef(A, Shifts, toplt = false, toprt = false)
         pause(pl);
       endif
     end#if
-
+    fflush(stdout);
   until(endIdx + 1 >= length(H))#if it touches the bottom 
 
 
   #create spikes
-  spSt = stIdx+1;#index of block
+  spSt = stIdx(end)+1;#index of block
   [spRot,~] = schur(H(spSt:end,spSt:end));
   H(:,spSt:end) = H(:,spSt:end)*spRot;
   H(spSt:end,(spSt-1):end) = spRot'*H(spSt:end,(spSt-1):end);
