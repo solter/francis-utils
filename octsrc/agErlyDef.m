@@ -82,7 +82,7 @@ function [H, pltNum] = agErlyDef(A, Shifts, toplt = false, toprt = false)
 
 
   #create spikes
-  spSt = stIdx(end)+1;#index of block
+  spSt = stIdx(end) - 4;#index of block
   [spRot,~] = schur(H(spSt:end,spSt:end));
   H(:,spSt:end) = H(:,spSt:end)*spRot;
   H(spSt:end,(spSt-1):end) = spRot'*H(spSt:end,(spSt-1):end);
@@ -111,6 +111,14 @@ function [sn] = sgn(v)
 endfunction
 
 function [] = pltMat(H)
-    imagesc(log(abs(H)) + .01);
+    imagesc(logNAN10(abs(H)));
     daspect([1 1 1]);
+    h = colorbar;
+    ytick = get(h, "ytick");
+    set (h, "yticklabel", sprintf ('10^{%g}|', ytick));
 end#function
+
+function [out] = logNAN10(in)
+  out = log10(in);
+  out(isinf(out)) = nan; 
+endfunction
