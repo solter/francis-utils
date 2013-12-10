@@ -22,12 +22,22 @@
 ##  @var{H} - The matrix A after running 2 bulges into it's center and
 ##    creating the spikes@*
 ## @end deftypefn
-function [H, pltNum] = agErlyDef(A, Shifts, toplt = false, toprt = false, spike = true)
-  H=A;
+function [H, pltNum] = agErlyDef(H, Shifts, toplt = false, toprt = false, spike = true)
 
-  pl = .2;#pause time when playing real time
+#TODO: actually deflate matrix, so far only finds deflation points while pushing bulges
+#need to do deflation logic for spike
+
+#TODO 2: implement derivatives... use in deflation logic
+
+  _PAUSELEN = 0.1;#pause time when playing real time
+  _MAXBSIZE = 4;#maximum bulge size
+  _EXTRASPIKE = .5*length(Shifts);#extra size of spike beyond shifts
+  _RELTOL = 1e-6;
+  _ABSTOL = 1e-14;
   
-  if(toplt)
+  toprt = toprt && tplt;%must be plotting to print
+
+  if(toprt)
     mkdir('impStepPlts');
     pltNum = 0;
   else
@@ -35,6 +45,7 @@ function [H, pltNum] = agErlyDef(A, Shifts, toplt = false, toprt = false, spike 
   end#if
 
   stIdx = [];#bulge starts
+  defIx = [];#list of points to deflate at
   endIdx = 1;#end of last bulge
   bsize = 0;#bulge size
   do
@@ -67,10 +78,18 @@ function [H, pltNum] = agErlyDef(A, Shifts, toplt = false, toprt = false, spike 
       H(1:tendIdx,:) -= v*((2*v')*H(1:tendIdx,:));
       H(:,1:tendIdx) -= (H(:,1:tendIdx)*(2*v))*v';#many zero mulitplies
      
-      if(++bsize > 3 || isempty(Shifts))
+      if(++bsize >= _MAXBULGESIZE || isempty(Shifts))
         stIdx = [stIdx 1];
         bsize = 0;
       endif
+    elseif( stIdx(end) > 3 )
+      #check for deflatable point
+      potIdx = stIdx(end) - 2;
+      #if entry is sufficientyly small
+      if ( abs( H(potIdx+1,potIdx)) < _RELTOL*( abs( H(potIdx,potIdx) )  + abs( H(potIdx + 1, potIdx + 1) ) ) || abs( H(potIdx+1,potIdx) ) < _ABSTOL)
+        defIdx = [potIdx defIdx];
+      endif
+
     endif
 
     if(toplt)
@@ -78,7 +97,7 @@ function [H, pltNum] = agErlyDef(A, Shifts, toplt = false, toprt = false, spike 
       if(toprt)
         print(sprintf('impStepPlts/impstep%03d.png',++pltNum));
       else
-        pause(pl);
+        pause(_PAUSELEN);
       endif
     end#if
     fflush(stdout);
@@ -86,8 +105,8 @@ function [H, pltNum] = agErlyDef(A, Shifts, toplt = false, toprt = false, spike 
 
   if(spike)
     
-    #create spikes
-    spSt = stIdx(end) - 4;#index of block
+    #create spike
+    spSt = stIdx(end) - _EXTRASPIKE;#index of block
     [spRot,~] = schur(H(spSt:end,spSt:end));
     H(:,spSt:end) = H(:,spSt:end)*spRot;
     H(spSt:end,(spSt-1):end) = spRot'*H(spSt:end,(spSt-1):end);
@@ -97,9 +116,36 @@ function [H, pltNum] = agErlyDef(A, Shifts, toplt = false, toprt = false, spike 
       if(toprt)
         print(sprintf('impStepPlts/impstep%03d.png',++pltNum));
       else
-        pause(pl);
+        pause(4*_PAUSELEN+.1);
       endif
     end#if
+
+    #TODO: Deflate
+
+    #chase spike off matrix
+    stIdx = spSt;
+    do
+            
+      v = H(stIdx:end, stIdx-1);
+      v(1) += sgn(v(1))*sqrt(v'*v);
+      v /= sqrt(v'*v);#normalize house vector
+      #apply householder transformation to the right bits
+      H(stIdx:end,:) -= v*((2*v')*H(stIdx:end,:));
+      H(1:end,stIdx:end) -= (H(1:end,stIdx:end)*(2*v))*v';
+      H(stIdx+1:end,stIdx-1) = 0;#zeros everything out for exactness
+
+      stIdx++;
+      
+      if(toplt)
+        pltMat(H);
+        if(toprt)
+          print(sprintf('impStepPlts/impstep%03d.png',++pltNum));
+        else
+          pause(_PAUSELEN);
+        endif
+      end#if
+
+    until(stIdx >= length(H))
 
   else#chase bulge off end
 
@@ -129,7 +175,7 @@ function [H, pltNum] = agErlyDef(A, Shifts, toplt = false, toprt = false, spike 
         if(toprt)
           print(sprintf('impStepPlts/impstep%03d.png',++pltNum));
         else
-          pause(pl);
+          pause(_PAUSELEN);
         endif
       end#if
 
@@ -162,4 +208,5 @@ end#function
 function [out] = logNAN10(in)
   out = log10(in);
   out(isinf(out)) = nan; 
+  out(out < -16) = nan;
 endfunction
