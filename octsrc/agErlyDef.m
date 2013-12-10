@@ -1,6 +1,8 @@
 ##-*- texinfo -*-
 ##@deftypefn{Function File} {[@var{H}, @var{spSt}, @var{spEnd}, @var{pltNum}] =} agErlyDef(@var{A},@var{topshifts})
 ##@deftypefnx{Function File} {[@var{H}, @var{spSt}, @var{spEnd}, @var{pltNum}] =} agErlyDef(@var{A},@var{topshifts},@var{toplt})
+##@deftypefnx{Function File} {[@var{H}, @var{spSt}, @var{spEnd}, @var{pltNum}] =} agErlyDef(@var{A},@var{topshifts},@var{toplt},@var{toprt})
+##@deftypefnx{Function File} {[@var{H}, @var{spSt}, @var{spEnd}, @var{pltNum}] =} agErlyDef(@var{A},@var{topshifts},@var{toplt},@var{toprt},@var{spike})
 ##
 ##This introduces 2 bulges (1 from top and 1 from bottom) which sweep until they meet.@*
 ##Then a Schur decomposition is performed to create spikes replacing the bulges.@*
@@ -13,12 +15,14 @@
 ##    will plot each step of the bulge creation and chasing.@*
 ##  @var{toprt} - Optional argument. If it is true, this function
 ##    will create a directory impStepPlts save the plots to it.@*
+##  @var{spike} - optional argument. If it is false, then the bulges
+##    will be chased off the bottom rather than creating a spike
 ##
 ##Outputs:@*
 ##  @var{H} - The matrix A after running 2 bulges into it's center and
 ##    creating the spikes@*
 ## @end deftypefn
-function [H, pltNum] = agErlyDef(A, Shifts, toplt = false, toprt = false)
+function [H, pltNum] = agErlyDef(A, Shifts, toplt = false, toprt = false, spike = true)
   H=A;
 
   pl = .2;#pause time when playing real time
@@ -80,21 +84,58 @@ function [H, pltNum] = agErlyDef(A, Shifts, toplt = false, toprt = false)
     fflush(stdout);
   until(endIdx + 1 >= length(H))#if it touches the bottom 
 
+  if(spike)
+    
+    #create spikes
+    spSt = stIdx(end) - 4;#index of block
+    [spRot,~] = schur(H(spSt:end,spSt:end));
+    H(:,spSt:end) = H(:,spSt:end)*spRot;
+    H(spSt:end,(spSt-1):end) = spRot'*H(spSt:end,(spSt-1):end);
 
-  #create spikes
-  spSt = stIdx(end) - 4;#index of block
-  [spRot,~] = schur(H(spSt:end,spSt:end));
-  H(:,spSt:end) = H(:,spSt:end)*spRot;
-  H(spSt:end,(spSt-1):end) = spRot'*H(spSt:end,(spSt-1):end);
+    if(toplt)
+      pltMat(H);
+      if(toprt)
+        print(sprintf('impStepPlts/impstep%03d.png',++pltNum));
+      else
+        pause(pl);
+      endif
+    end#if
 
-  if(toplt)
-    pltMat(H);
-    if(toprt)
-      print(sprintf('impStepPlts/impstep%03d.png',++pltNum));
-    else
-      pause(pl);
-    endif
-  end#if
+  else#chase bulge off end
+
+    ++stIdx;
+    do
+      endIdx = length(H);
+      for tstIdx = stIdx#for each 
+        #create house vector
+        v = H(tstIdx:endIdx, tstIdx-1);
+        v(1) += sgn(v(1))*sqrt(v'*v);
+        v /= sqrt(v'*v);#normalize house vector
+        #apply householder transformation to the right bits
+        H(tstIdx:endIdx,:) -= v*((2*v')*H(tstIdx:endIdx,:));
+        tendIdx = min(endIdx + 1, length(H));
+        H(1:tendIdx,tstIdx:endIdx) -= (H(1:tendIdx,tstIdx:endIdx)*(2*v))*v';
+        H(tstIdx+1:endIdx,tstIdx-1) = 0;#zeros everything out for exactness
+        endIdx = tstIdx;
+      endfor
+      
+      ++stIdx;
+      if(stIdx(1) >= length(H))
+        stIdx(1) = [];
+      endif
+      
+      if(toplt)
+        pltMat(H);
+        if(toprt)
+          print(sprintf('impStepPlts/impstep%03d.png',++pltNum));
+        else
+          pause(pl);
+        endif
+      end#if
+
+    until(isempty(stIdx))
+
+  endif%done with spiking branching
 
   if(toprt)
     close all;
